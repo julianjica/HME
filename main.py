@@ -2,7 +2,6 @@ import numpy as np
 from scipy.integrate import dblquad
 from scipy.stats import norm
 from scipy import optimize
-from stochopy.optimize import minimize as sminimize
 
 def manager_problem(x, y, t, params, a, C, sigma):
     # Unpacking parameters
@@ -29,16 +28,16 @@ def pre_integration(x, y, t, params, a, C, sigma):
 def payoff(t, params, a, C, sigma):
     r = params[-1]
     sigmac, sigmad = sigma
-    integral, _ = dblquad(lambda x, y: pre_integration(x, y, t, params, a, C, sigma),
-                       -3 * sigmac, 3 * sigmac, -3 * sigmad, 3 * sigmad)
-    return - np.log(integral) / r
+    integral, _ = dblquad(pre_integration,  -3 * sigmac, 3 * sigmac,
+                          -3 * sigmad, 3 * sigmad, args = (t, params, a, C, sigma))
+    return np.log(integral) / r # negative
 
 def optimal_t(params, a, C, sigma):
-    return optimize.minimize(lambda t: -payoff(t, params, a, C, sigma), [1, 1, 1],
-                             method = "SLSQP")#,
+    return optimize.minimize(payoff, [1, 1, 1], method = "SLSQP",
+                             args =(params, a, C, sigma))#,
                              #bounds = optimize.Bounds([0, 0, 0], [np.inf, np.inf, np.inf]))
 
-def principal_problem(b, params, C, sigma, stochastic = False):
+def principal_problem(b, params, C, sigma):
     def optimization_fun(x, y, a, b, params, C, sigma):
         t = optimal_t(params, a, C, sigma).x
         sigmac, sigmad = sigma
@@ -53,17 +52,12 @@ def principal_problem(b, params, C, sigma, stochastic = False):
 
     def integration(a,b, params, C, sigma):
         sigmac, sigmad = sigma
-        integral, _ = dblquad(lambda x, y: optimization_fun(x, y, a, b, params, C, sigma),
-                       -3 * sigmac, 3 * sigmac, -3 * sigmad, 3 * sigmad)
-        return integral
-    if not(stochastic):
-        return optimize.minimize(lambda a: -integration(a, b, params, C, sigma), [1, 1],
-                                 method="SLSQP")
-    else:
-        return sminimize(lambda a: -integration(a, b, params, C, sigma), x0 = [1, 1], 
-                                bounds = [[0,5], [0,5]], 
-                                 method="cmaes", options={"maxiter": 100, "popsize": 10, "seed": 0})
-
+        integral, _ = dblquad(optimization_fun, -3 * sigmac, 3 * sigmac,
+                              -3 * sigmad, 3 * sigmad, args=(a, b, params, C, sigma))
+        return -integral #negative
+   
+    return optimize.minimize(integration, [1, 1], method="SLSQP",
+                             args = (b, params, C, sigma))
 
 if __name__ == "__main__":
     params = [1, 1, 1, 1, 1, 1, 2, 1, 1]
@@ -72,5 +66,5 @@ if __name__ == "__main__":
     b = [1, 1]
     t = np.array([1, 1, 1])
     C = np.array([[2, 0, -1], [0, 2, -1], [-1, -1, 2]])
-    #print(optimal_t(params, a, C, sigma))
-    print(principal_problem(b, params, C, sigma, stochastic = True))
+    print(optimal_t(params, a, C, sigma))
+    #print(principal_problem(b, params, C, sigma, stochastic = True))
