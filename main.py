@@ -2,6 +2,7 @@ import numpy as np
 from scipy.integrate import dblquad
 from scipy.stats import norm
 from scipy import optimize
+from stochopy.optimize import minimize as sminimize
 
 def manager_problem(x, y, t, params, a, C, sigma):
     # Unpacking parameters
@@ -37,7 +38,7 @@ def optimal_t(params, a, C, sigma):
                              method = "SLSQP")#,
                              #bounds = optimize.Bounds([0, 0, 0], [np.inf, np.inf, np.inf]))
 
-def principal_problem(b, params, C, sigma):
+def principal_problem(b, params, C, sigma, stochastic = False):
     def optimization_fun(x, y, a, b, params, C, sigma):
         t = optimal_t(params, a, C, sigma).x
         sigmac, sigmad = sigma
@@ -55,9 +56,14 @@ def principal_problem(b, params, C, sigma):
         integral, _ = dblquad(lambda x, y: optimization_fun(x, y, a, b, params, C, sigma),
                        -3 * sigmac, 3 * sigmac, -3 * sigmad, 3 * sigmad)
         return integral
+    if not(stochastic):
+        return optimize.minimize(lambda a: -integration(a, b, params, C, sigma), [1, 1],
+                                 method="SLSQP")
+    else:
+        return sminimize(lambda a: -integration(a, b, params, C, sigma), x0 = [1, 1], 
+                                bounds = [[0,5], [0,5]], 
+                                 method="cmaes", options={"maxiter": 100, "popsize": 10, "seed": 0})
 
-    return optimize.minimize(lambda a: -integration(a, b, params, C, sigma), [1, 1],
-                             method="SLSQP", options={"maxiter":1})
 
 if __name__ == "__main__":
     params = [1, 1, 1, 1, 1, 1, 2, 1, 1]
@@ -67,4 +73,4 @@ if __name__ == "__main__":
     t = np.array([1, 1, 1])
     C = np.array([[2, 0, -1], [0, 2, -1], [-1, -1, 2]])
     #print(optimal_t(params, a, C, sigma))
-    print(principal_problem(b, params, C, sigma))
+    print(principal_problem(b, params, C, sigma, stochastic = True))
