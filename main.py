@@ -2,6 +2,7 @@ import numpy as np
 from scipy.integrate import dblquad
 from scipy.stats import norm
 from scipy import optimize
+from subprocess import run
 
 def manager_problem(x, y, t, params, a, C, sigma):
     # Unpacking parameters
@@ -39,16 +40,17 @@ def optimal_t(params, a, C, sigma):
 
 def principal_problem(b, params, C, sigma):
     def optimization_fun(x, y, a, b, params, C, sigma):
-        t = optimal_t(params, a, C, sigma).x
+        t = run(['./slsqp.out', str(sigma[0]), str(sigma[1])], capture_output=True, text=True).stdout
+        t = np.array([float(x) for x in t.replace("\n", "").split(" ")])
         sigmac, sigmad = sigma
         a1, a2 = a
         r = params[-1]
         b1, b2 = b
         man_q = manager_problem(x, y, t, params, a, C, sigma)
-        B = b1 * man_q[0] + b2 * man_q[1] \
-            * norm.pdf(x, loc = 0, scale = sigmac) \
-            * norm.pdf(y, loc = 0, scale = sigmad)
-        return B - t.T @ C @ t - r * (a1 ** 2 * sigmac**2 + a2 ** 2 + sigmad ** 2)
+        B = b1 * man_q[0] + b2 * man_q[1]
+            
+        return (B - t.T @ C @ t - r * (a1 ** 2 * sigmac**2 + a2 ** 2 + sigmad ** 2))\
+                * norm.pdf(x, loc = 0, scale = sigmac) * norm.pdf(y, loc = 0, scale = sigmad)
 
     def integration(a,b, params, C, sigma):
         sigmac, sigmad = sigma
@@ -66,5 +68,5 @@ if __name__ == "__main__":
     b = [1, 1]
     t = np.array([1, 1, 1])
     C = np.array([[2, 0, -1], [0, 2, -1], [-1, -1, 2]])
-    print(optimal_t(params, a, C, sigma))
-    #print(principal_problem(b, params, C, sigma, stochastic = True))
+    #print(optimal_t(params, a, C, sigma))
+    print(principal_problem(b, params, C, sigma))
