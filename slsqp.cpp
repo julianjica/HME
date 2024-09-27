@@ -91,7 +91,7 @@ double objective_wrapper(const std::vector<double>& t, std::vector<double>& grad
     double result = -payoff(t_vec, params, a, C, sigma);
 
     // Debugging: Print the current value of the objective
-    std::cout << "Evaluating payoff at t = [" << t[0] << ", " << t[1] << ", " << t[2] << "] -> " << result << std::endl;
+    //std::cout << "Evaluating payoff at t = [" << t[0] << ", " << t[1] << ", " << t[2] << "] -> " << result << std::endl;
 
     return result;
 }
@@ -122,16 +122,16 @@ Eigen::Vector3d optimal_t(const std::vector<double>& params, const std::vector<d
     return Eigen::Vector3d(t_opt.data());
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     vector<double> params = {1, 1, 1, 1, 1, 1, 2, 1, 1};
-    vector<double> sigma = {1, 1};
+    vector<double> sigma = {atof(argv[1]), atof(argv[2])};
     vector<double> a = {1, 1};
     Matrix3d C;
     C << 2, 0, -1, 0, 2, -1, -1, -1, 2;
     
     // Find optimal t
     Vector3d t = optimal_t(params, a, C, sigma);
-    cout << "Optimal t: " << t[0] << " " << t[1] << " " << t[2] << endl;
+    cout << t[0] << " " << t[1] << " " << t[2] << endl;
 
     return 0;
 }
