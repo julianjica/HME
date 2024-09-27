@@ -211,14 +211,14 @@ int main(int argc, char *argv[]) {
     Matrix3d C;
     C << 1, 0, -0.5, 0, 1, -0.5, -0.5, -.5, 1;
     
-    // Find optimal t
-    // Vector3d t = optimal_t(params, a, C, sigma);
     // cout << "Optimal t: " << t[0] << " " << t[1] << " " << t[2] << endl;
 
     // Find optimal a
     Vector2d optimal_a = principal(b, params, C, sigma);
-    // sigmad, a1^*, a2^*
-    cout << sigma[1] << " " << optimal_a[0] << " " << optimal_a[1] << endl;
+    // Find optimal t
+     Vector3d t = optimal_t(params, optimal_a, C, sigma);
+    // sigmad, a1^*, a2^*, tc^*, td^*, tk^*
+    cout << sigma[1] << " " << optimal_a[0] << " " << optimal_a[1] << " " << t[0]<< " " << t[1]<< " " << t[2]<< endl;
 
     return 0;
 }
